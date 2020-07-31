@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+    <element>
+        <capital>Kyiv</capital>
+        <country>Ukraine</country>
+    </element>
+    <element>
+        <capital>Berlin</capital>
+        <country>Germany</country>
+    </element>
+    <element>
+        <capital>Washington</capital>
+        <country>USA</country>
+    </element>
+</root>

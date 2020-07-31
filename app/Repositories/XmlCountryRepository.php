@@ -6,6 +6,7 @@ namespace App\Repositories;
 
 use App\Country;
 use App\Interfaces\CountryReaderInterface;
+use Illuminate\Support\Facades\Storage;
 
 class XmlCountryRepository implements CountryReaderInterface
 {
@@ -16,18 +17,30 @@ class XmlCountryRepository implements CountryReaderInterface
     }
 
     public function import() {
-        $rows = simplexml_load_file($this->file);
-        foreach ($rows->element as $row) {
+        $rows = $this->convertToArray();
+        foreach ($rows as $row) {
             Country::create([
-                'country' => (string)$row->country,
-                'capital' => (string)$row->capital
+                'country' => $row['country'],
+                'capital' => $row['capital']
             ]);
         }
     }
 
-    public function export($data)
+    public function convertToArray() {
+        $rows = simplexml_load_file($this->file);
+        $results = [];
+        foreach ($rows->element as $row) {
+            $data = [];
+            $data['country'] = (string)$row->country;
+            $data['capital'] = (string)$row->capital;
+            $results[] = $data;
+        }
+        return $results;
+    }
+
+    public function export($data, $file=null)
     {
-        $c = $data->toArray();
+        $c = is_array($data) ? $data : $data->toArray();
 
         $xml = '<root>';
         foreach($c as $key => $country) {
@@ -41,8 +54,13 @@ class XmlCountryRepository implements CountryReaderInterface
         $dom = new \DOMDocument('1,0');
         $dom->preserveWhiteSpace = false;
         $dom->formatOutput = true;
-        header('Content-type: text/xml');
-        header('Content-Disposition: attachment; filename="'.$this->file.'";');
-        echo $sxe->asXML();
+        if(!$file) {
+            header('Content-type: text/xml');
+            header('Content-Disposition: attachment; filename="' . $this->file . '";');
+            echo $sxe->asXML();
+        }
+        else {
+            Storage::disk('public')->put($file, $sxe->asXML());
+        }
     }
 }

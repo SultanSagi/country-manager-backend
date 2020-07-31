@@ -16,30 +16,44 @@ class CsvCountryRepository implements CountryReaderInterface
     }
 
     public function import() {
-        $rows = file($this->file);
-        for($i=1;$i<count($rows);$i++) {
-            $values = array_map('trim', explode(',', $rows[$i]));
+        $rows = $this->convertToArray();
+        foreach ($rows as $row) {
             Country::create([
-                'country' => $values[0],
-                'capital' => $values[1]
+                'country' => $row['country'],
+                'capital' => $row['capital']
             ]);
         }
     }
 
-    public function export($data)
+    public function convertToArray() {
+        $rows = file($this->file);
+        $results = [];
+        for($i=1;$i<count($rows);$i++) {
+            $values = array_map('trim', explode(',', $rows[$i]));
+            $data = [];
+            $data['country'] = $values[0];
+            $data['capital'] = $values[1];
+            $results[] = $data;
+        }
+        return $results;
+    }
+
+    public function export($data, $file=null)
     {
-        $c = $data->toArray();
+        $c = is_array($data) ? $data : $data->toArray();
         $delimiter = ',';
         $array = array_map(function($arr) {
             return array_values($arr);
         }, $c);
-        $f = fopen('php://memory', 'w');
+        $f = fopen($file ?? 'php://memory', 'w');
         foreach ($array as $line) {
             fputcsv($f, $line, $delimiter);
         }
-        fseek($f, 0);
-        header('Content-Type: application/csv');
-        header('Content-Disposition: attachment; filename="'.$this->file.'";');
-        fpassthru($f);
+        if(!$file) {
+            fseek($f, 0);
+            header('Content-Type: application/csv');
+            header('Content-Disposition: attachment; filename="' . $this->file . '";');
+            fpassthru($f);
+        }
     }
 }

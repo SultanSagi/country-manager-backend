@@ -16,23 +16,38 @@ class JsonCountryRepository implements CountryReaderInterface
     }
 
     public function import() {
-        $rows = file_get_contents($this->file);
-        $data = json_decode($rows, true);
-        foreach($data as $country) {
+        $rows = $this->convertToArray();
+        foreach ($rows as $row) {
             Country::create([
-                'country' => $country['country'],
-                'capital' => $country['capital']
+                'country' => $row['country'],
+                'capital' => $row['capital']
             ]);
         }
     }
 
-    public function export($data)
+    public function convertToArray() {
+        $rows = file_get_contents($this->file);
+        $data = json_decode($rows, true);
+        $results = [];
+        foreach($data as $country) {
+            $data = [];
+            $data['country'] = $country['country'];
+            $data['capital'] = $country['capital'];
+            $results[] = $data;
+        }
+        return $results;
+    }
+
+    public function export($data, $file=null)
     {
-        $fp = fopen('php://memory', 'w');
+        $data = is_array($data) ? $data : $data->toArray();
+        $fp = fopen($file ?? 'php://memory', 'w');
         fwrite($fp, json_encode($data));
-        fseek($fp, 0);
-        header('Content-Type: application/csv');
-        header('Content-Disposition: attachment; filename="'.$this->file.'";');
-        fpassthru($fp);
+        if(!$file) {
+            fseek($fp, 0);
+            header('Content-Type: application/csv');
+            header('Content-Disposition: attachment; filename="' . $this->file . '";');
+            fpassthru($fp);
+        }
     }
 }
